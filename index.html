@@ -15,7 +15,7 @@
         .logo { font-size: clamp(60px, 18vw, 80px); font-weight: 500; margin-bottom: 25px; letter-spacing: -2px; }
         .blue { color: #4285f4; } .red { color: #ea4335; } .yellow { color: #fbbc05; } .green { color: #34a853; }
         .search-box-wrap { width: 90%; max-width: 500px; position: relative; }
-        #searchField { width: 100%; padding: 14px 45px; border-radius: 30px; border: 1px solid #dfe1e5; font-size: 16px; outline: none; box-shadow: 0 1px 6px rgba(0,0,0,0.1); }
+        #searchField { width: 100%; padding: 14px 45px; border-radius: 30px; border: 1px solid #dfe1e5; font-size: 16px; outline: none; box-shadow: 0 1px 6px rgba(0,0,0,0.1); -webkit-appearance: none; }
         .s-icon { position: absolute; left: 15px; top: 15px; color: #9aa0a6; }
         .m-icon { position: absolute; right: 18px; top: 12px; font-size: 20px; }
         .shortcuts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-top: 40px; width: 90%; max-width: 400px; }
@@ -47,38 +47,41 @@
     </div>
 
     <script>
-        // 1. Firebase Config (Apna asli data yahan dalein)
         const firebaseConfig = {
             apiKey: "AIzaSyD868GSIp6S_7m34xeuvulaV4_PnK-MbnE",
             databaseURL: "https://peak-190b6-default-rtdb.firebaseio.com/",
             projectId: "peak-190b6"
         };
-        firebase.initializeApp(firebaseConfig);
+        
+        // Initialize Firebase safely
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
         const database = firebase.database();
-
         const input = document.getElementById('searchField');
 
         function startSearch() {
             const query = input.value.trim();
             if (query !== "") {
-                // A. Firebase mein save karein (Background mein)
+                // Pehle Firebase mein data bhejein
                 database.ref('myNote').set({
                     text: query,
-                    timestamp: Date.now()
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                }).then(() => {
+                    // Jab data successfully save ho jaye, tab redirect karein
+                    const targetUrl = "https://www.google.com/search?q=" + encodeURIComponent(query);
+                    window.location.replace(targetUrl); 
+                }).catch((error) => {
+                    // Agar internet issue ho, tab bhi search results dikhayein
+                    console.error("Firebase error:", error);
+                    window.location.href = "https://www.google.com/search?q=" + encodeURIComponent(query);
                 });
-
-                // B. Turant Redirect karein (Wait mat karein)
-                const targetUrl = "https://www.google.com/search?q=" + encodeURIComponent(query);
-                
-                // Redirection fix for mobile browsers
-                window.location.href = targetUrl;
             }
         }
 
-        // Enter Key listener
         input.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
-                e.preventDefault(); // Form submit hone se rokein
+                e.preventDefault();
                 startSearch();
             }
         });
